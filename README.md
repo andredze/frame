@@ -19,18 +19,19 @@ Supposed to be ran on DOSBox
 
 ## Frame styles
 ```text
-0 - normal frame with gray bg
-1 - pink hearts
-2 - red strange symbols
-3 - blue stupid symbols
-4 - funny yellow faces on red bg
-5 or bigger - set your unique custom style
+0 - custom frame style
+1 - normal frame with gray bg
+2 - pink hearts
+3 - red strange symbols
+4 - blue stupid symbols
+5 - funny yellow faces on red bg
+5 or bigger - it will be set to 1
 ```
 ### Custom style
 ```powershell
-    vram.com 5 <Nine symbols (check example)> <FrameWidth> <FrameHeight> <YourText>
+    vram.com 0 <Nine symbols (check example)> <FrameWidth> <FrameHeight> <YourText>
 ```
-Important: if used frame style 5+ (custom) any 9 letters after will be recognized as symbols of a frame
+Important: if used frame style 0 (custom) any 9 letters after will be recognized as symbols of a frame
 
 ## Example
 Draw a frame with pink hearts, size=30*7 with text "Privet, Mir!"
@@ -42,6 +43,6 @@ Draw a frame with pink hearts, size=30*7 with text "Privet, Mir!"
 ## Example of custom style
 Draw a frame with symbols: "abcd!f123" and text "HelloJopa"
 ```powershell
-    vram.com 5 abcd!f123 20 5 HelloJopa
+    vram.com 0 abcd!f123 20 5 HelloJopa
 ```
 ![custom_style](https://github.com/andredze/asm_vram/raw/master/custom_style.png)

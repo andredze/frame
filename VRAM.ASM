@@ -7,7 +7,9 @@ locals @@
 
 ;--------------------------------------------------------------------------------
 
-MIN_FRAME_SIZE      equ 3
+MIN_FRAME_SIZE      equ 3d
+MAX_FRAME_WIDTH     equ 80d
+MAX_FRAME_HEIGHT    equ 20d
 FS_STYLES_COUNT     equ 5
 
 RESET_SYMBOL        equ 0720h
@@ -335,52 +337,13 @@ ParseCmdLine proc
     ; Get FrameStyle index
     call GetInt
     call SkipSpaces
-
-    cmp ax, 5
-    jl @@NotCustomFrameStyle
-
-    call ParseCustomFrameStyle
-    mov ax, offset CustomFrameStyle
-    call SkipSpaces
-
-    jmp @@ParseCont
-
-    @@NotCustomFrameStyle:
+    push bx dx
+    ; Get FrameStyleStruct ptr
     call GetFrameStyle
+    pop dx bx
 
-    @@ParseCont:
-    ; save FrameStyle index
     push ax
-
-    ; Get FrameWidth
-    call GetInt
-    mov bx, ax
-    ; check frame width for zero
-    cmp bx, 0
-    jg @@FrameWidthIsOk
-        mov bx, MIN_FRAME_SIZE
-    @@FrameWidthIsOk:
-    call SkipSpaces
-
-    ; Get FrameHeight
-    push bx
-    call GetInt
-    mov dx, ax
-    pop bx
-
-    ; check frame height for small numbers
-    cmp dx, MIN_FRAME_SIZE
-    jge @@FrameHeightIsOk
-        mov dx, MIN_FRAME_SIZE
-    @@FrameHeightIsOk:
-
-    call SkipSpaces
-
-    mov ax, bx
-    call MakeEven
-    mov bx, ax
-
-    ; get FrameStyle index
+    call GetFrameSize
     pop ax
 
     pop bp
@@ -390,6 +353,61 @@ ParseCmdLine proc
     ret 4
 
 ParseCmdLine endp
+
+;--------------------------------------------------------------------------------
+; Short:   Parse cmd line to get frame width and frame height
+; Exp:     -
+; In:      CX = cmd tail args end len
+;          DS:[SI] --> cmd tail args
+; Out:     BX = frame width
+;          DX = frame height
+; Destroy: AX
+;--------------------------------------------------------------------------------
+
+GetFrameSize proc
+
+    ; Get FrameWidth
+    call GetInt
+    mov bx, ax
+
+    ; check frame width for boundaries
+    cmp bx, MIN_FRAME_SIZE
+    jge @@FrameWidthIsOk
+        mov bx, MIN_FRAME_SIZE
+
+    cmp bx, MAX_FRAME_WIDTH
+    jle @@FrameWidthIsOk
+        mov bx, MAX_FRAME_WIDTH
+    @@FrameWidthIsOk:
+
+    call SkipSpaces
+
+    ; Get FrameHeight
+    push bx
+    call GetInt
+    pop bx
+    mov dx, ax
+
+    ; check frame height for boundaries
+    cmp dx, MIN_FRAME_SIZE
+    jge @@FrameHeightIsOk
+        mov dx, MIN_FRAME_SIZE
+
+    cmp bx, MAX_FRAME_HEIGHT
+    jle @@FrameHeightIsOk
+        mov bx, MAX_FRAME_HEIGHT
+
+    @@FrameHeightIsOk:
+
+    call SkipSpaces
+
+    mov ax, bx
+    call MakeEven
+    mov bx, ax
+
+    ret
+
+GetFrameSize endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   skips spaces
@@ -455,6 +473,7 @@ MakeEven endp
 ;--------------------------------------------------------------------------------
 
 GetInt proc
+    xor ax, ax
 
     ; if StringLen <= 0 --> end
     cmp cx, 0
@@ -532,26 +551,38 @@ IsDigit endp
 ; Exp:     -
 ; In:      AX = Frame Style index
 ; Out:     AX --> FrameStyle
-; Destroy: -
+; Destroy: BX, DX
 ;--------------------------------------------------------------------------------
 
 GetFrameStyle proc
 
-    push dx bx
+    cmp ax, 0
+    jne @@DefaultFrameStyle
+
+    call ParseCustomFrameStyle
+    mov ax, offset CustomFrameStyle
+    call SkipSpaces
+
+    jmp @@End
+
+    @@DefaultFrameStyle:
 
     ; check index for negatives and overflow
     cmp ax, FS_STYLES_COUNT
-    jge @@SetZeroIndex
+    jg @@SetDefaultIndex
 
     cmp ax, 0
-    jl @@SetZeroIndex
+    jl @@SetDefaultIndex
 
     jmp @@PossibleIndex
 
-    @@SetZeroIndex:
-    mov ax, 00h
+    @@SetDefaultIndex:
+    mov ax, 01h
 
     @@PossibleIndex:
+
+    ; indexing starts from 0 but styles from 1
+    dec ax
 
     ; count shift in FSTable
     mov bx, FS_STYLE_SIZE
@@ -560,7 +591,7 @@ GetFrameStyle proc
     ; AX --> FrameStyleStruct
     add ax, offset FrameStylesTable
 
-    pop bx dx
+    @@End:
 
     ret
 
@@ -935,7 +966,7 @@ CustomFrameStyle FrameStyle <           \
 FrameStylesTable label FrameStyle
 
 ;------------------------------------
-; [0] = normal
+; [1] = normal
     FrameStyle <                        \
         (             PINK    * 100h),  \
         (             GRAY_BG * 100h),  \
@@ -950,7 +981,7 @@ FrameStylesTable label FrameStyle
         (RD_CORNER  + BRT_RED * 100h)>
 
 ;------------------------------------
-; [1] = pink
+; [2] = pink
     FrameStyle <                    \
         (        WHITE * 100h),     \
         (        PINK_BG * 100h),   \
@@ -965,7 +996,7 @@ FrameStylesTable label FrameStyle
         (HEART + WHITE * 100h)>
 
 ;------------------------------------
-; [2] = cursed
+; [3] = cursed
     FrameStyle <                        \
         (             BLUE    * 100h),  \
         (             BLACK   * 100h),  \
@@ -980,7 +1011,7 @@ FrameStylesTable label FrameStyle
         (10h        + BRT_RED * 100h)>
 
 ;------------------------------------
-; [3] = penis c1h c2h
+; [4] = penis c1h c2h
     FrameStyle <                         \
         (              BLUE    * 100h),  \
         (              BLUE_BG * 100h),  \
@@ -995,7 +1026,7 @@ FrameStylesTable label FrameStyle
         (0c1h        + BLUE    * 100h)>
 
 ;------------------------------------
-; [4] = funny faces
+; [5] = funny faces
     FrameStyle <                        \
         (              4eh    * 100h),  \
         (              4eh    * 100h),  \
