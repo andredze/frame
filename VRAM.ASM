@@ -7,6 +7,8 @@ locals @@
 
 ;--------------------------------------------------------------------------------
 
+GREEN_BG            equ 30h
+
 MIN_FRAME_SIZE      equ 3d
 MAX_FRAME_WIDTH     equ 80d
 MAX_FRAME_HEIGHT    equ 20d
@@ -220,10 +222,6 @@ DrawScreen proc
 
     call DrawCenteredText
     pop ax bx dx si di
-
-    ; BackGround Color
-    mov ax, [si + BGColor]
-    call DrawFrameBackground
 
     ret
 
@@ -757,6 +755,7 @@ DrawHorizontalLine proc
     ; while (cx--) es:[di += 2] = ax
     rep stosw
 
+; draw right symbol
     ; ds[si] = right symbol
     ; ax = ds:[si += 2]
     lodsw
@@ -874,58 +873,6 @@ LoadText proc
 LoadText endp
 
 ;--------------------------------------------------------------------------------
-; Short:   Draws background for the frame
-; Exp:     ES = Video Segment
-;          DF = 0
-; In:      DI = pos of the lu frame corner
-;          BX = frame width
-;          DX = frame height
-;          AH = background color
-; Out:     -
-; Destroy: SI, DI, CX
-;--------------------------------------------------------------------------------
-
-DrawFrameBackground proc
-
-    ; save bp
-    push bp
-
-    ; si = iterator for lines
-    mov si, dx
-
-    ; bp = 2 * (SCREEN_WIDTH - FRAME_WIDTH)
-    ; bp = shift for DI in loop
-    mov bp, (SCREEN_WIDTH)
-    sub bp, bx
-    shl bp, 1
-
-    @@NextLine:
-        ; cx = iterator for columns
-        mov cx, bx
-
-        @@NextSymbol:
-            and byte ptr es:[di + 1], ZERO_BG_COLOR
-            or  byte ptr es:[di + 1], ah
-
-            add di, 2
-
-        loop @@NextSymbol
-
-        ; move to the next line start
-        add di, bp
-
-        dec si
-
-    cmp si, 0
-    jnz @@NextLine
-
-    pop bp
-
-    ret
-
-DrawFrameBackground endp
-
-;--------------------------------------------------------------------------------
 ; Short:   ends the program
 ; Exp:     -
 ; In:      -
@@ -950,50 +897,51 @@ Exit endp
 
 AnimationStep dw ?
 
-CustomFrameStyle FrameStyle <           \
-        (             BRT_RED * 100h),  \
-        (             GRAY_BG * 100h),  \
-        (LU_CORNER  + BRT_RED * 100h),  \
-        (HORIZ_LINE + BRT_RED * 100h),  \
-        (RU_CORNER  + BRT_RED * 100h),  \
-        (VERT_LINE  + BRT_RED * 100h),  \
-        (SPACE      + WHITE   * 100h),  \
-        (VERT_LINE  + BRT_RED * 100h),  \
-        (LD_CORNER  + BRT_RED * 100h),  \
-        (HORIZ_LINE + BRT_RED * 100h),  \
-        (RD_CORNER  + BRT_RED * 100h)>
+CustomFrameStyle FrameStyle <                       \
+        (             (GRAY_BG + BRT_RED) * 100h),  \
+        (                         GRAY_BG * 100h),  \
+        (LU_CORNER  + (GRAY_BG + BRT_RED) * 100h),  \
+        (HORIZ_LINE + (GRAY_BG + BRT_RED) * 100h),  \
+        (RU_CORNER  + (GRAY_BG + BRT_RED) * 100h),  \
+        (VERT_LINE  + (GRAY_BG + BRT_RED) * 100h),  \
+        (SPACE      + (GRAY_BG + WHITE  ) * 100h),  \
+        (VERT_LINE  + (GRAY_BG + BRT_RED) * 100h),  \
+        (LD_CORNER  + (GRAY_BG + BRT_RED) * 100h),  \
+        (HORIZ_LINE + (GRAY_BG + BRT_RED) * 100h),  \
+        (RD_CORNER  + (GRAY_BG + BRT_RED) * 100h)>
 
 FrameStylesTable label FrameStyle
 
 ;------------------------------------
 ; [1] = normal
-    FrameStyle <                        \
-        (             PINK    * 100h),  \
-        (             GRAY_BG * 100h),  \
-        (LU_CORNER  + BRT_RED * 100h),  \
-        (HORIZ_LINE + BRT_RED * 100h),  \
-        (RU_CORNER  + BRT_RED * 100h),  \
-        (VERT_LINE  + BRT_RED * 100h),  \
-        (SPACE      + BRT_RED * 100h),  \
-        (VERT_LINE  + BRT_RED * 100h),  \
-        (LD_CORNER  + BRT_RED * 100h),  \
-        (HORIZ_LINE + BRT_RED * 100h),  \
-        (RD_CORNER  + BRT_RED * 100h)>
+
+RegsFrameStyle FrameStyle <                     \
+    (             (PINK    + GRAY_BG) * 100h),  \
+    (                        GRAY_BG  * 100h),  \
+    (LU_CORNER  + (BRT_RED + GRAY_BG) * 100h),  \
+    (HORIZ_LINE + (BRT_RED + GRAY_BG) * 100h),  \
+    (RU_CORNER  + (BRT_RED + GRAY_BG) * 100h),  \
+    (VERT_LINE  + (BRT_RED + GRAY_BG) * 100h),  \
+    (' '        + (BRT_RED + GRAY_BG) * 100h),  \
+    (VERT_LINE  + (BRT_RED + GRAY_BG) * 100h),  \
+    (LD_CORNER  + (BRT_RED + GRAY_BG) * 100h),  \
+    (HORIZ_LINE + (BRT_RED + GRAY_BG) * 100h),  \
+    (RD_CORNER  + (BRT_RED + GRAY_BG) * 100h)>
 
 ;------------------------------------
 ; [2] = pink
-    FrameStyle <                    \
-        (        WHITE * 100h),     \
-        (        PINK_BG * 100h),   \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h),     \
-        (HEART + PINK * 100h),      \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h),     \
-        (HEART + WHITE * 100h)>
+    FrameStyle <                            \
+        (        (WHITE + PINK_BG) * 100h), \
+        (                 PINK_BG  * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (PINK +  PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h), \
+        (HEART + (WHITE + PINK_BG) * 100h)>
 
 ;------------------------------------
 ; [3] = cursed
@@ -1012,18 +960,18 @@ FrameStylesTable label FrameStyle
 
 ;------------------------------------
 ; [4] = penis c1h c2h
-    FrameStyle <                         \
-        (              BLUE    * 100h),  \
-        (              BLUE_BG * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (0c2h        + BLUE    * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (SPACE      + BRT_RED * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (0c1h        + BLUE    * 100h),  \
-        (0c1h        + BLUE    * 100h)>
+    FrameStyle <                            \
+        (              BLUE    * 100h),     \
+        (              BLUE_BG * 100h),     \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c2h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (SPACE + (BRT_RED + GREEN_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h),  \
+        (0c1h  + (BLUE + BLUE_BG) * 100h)>
 
 ;------------------------------------
 ; [5] = funny faces
