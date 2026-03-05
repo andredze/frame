@@ -1,47 +1,46 @@
 # Frame
 
-Program draws an animation of a frame pulsing with text in center of the screen.
+Программа рисует анимацию пульсирующей рамки с текстом по середине экрана
 
-Supposed to be ran on DOSBox
+Должна быть запущена на DOSBox-е
 
-# Build program
+# Скомпилировать программу
 ```powershell
     tasm /la vram.asm
     tlink /t vram.obj
 ```
 
-# Run program
+# Запуск программы
 
-## Format
+## Формат ввода
 ```powershell
-    vram.com <FrameStyle> <FrameWidth> <FrameHeight> <YourText>
+    vram.com <Стиль рамки> <Ширина рамки> <Высота рамки> <Текст>
 ```
 
-## Frame styles
+## Стили рамки
 ```text
-0 - custom frame style
-1 - normal frame with gray bg
-2 - pink hearts
-3 - red strange symbols
-4 - blue stupid symbols
-5 - funny yellow faces on red bg
-5 or bigger - it will be set to 1
+0 - ввести рамку с произвольным стилем
+1 - классическая рамка с серым фоном
+2 - розовый фон в белых сердечках
+3 - черный фон с красными нулями, красные границы
+4 - синяя рамка с зеленым фоном в виде перевернутых букв Т
+5 - красный фон с веселыми желтыми лицами
+любое значение больше будет установлено в значение по умолчанию - 1
 ```
-### Custom style
+### Произвольный стиль
 ```powershell
-    vram.com 0 <Nine symbols (check example)> <FrameWidth> <FrameHeight> <YourText>
+    vram.com 0 <9 символов, составляющих рамку> <Ширина рамки> <Высота рамки> <Текст>
 ```
-Important: if used frame style 0 (custom) any 9 letters after will be recognized as symbols of a frame
 
-## Example
-Draw a frame with pink hearts, size=30*7 with text "Privet, Mir!"
+## Пример 1
+Рамка с розовыми сердечками размером 30 * 7 с текстом "Privet, Mir!"
 ```powershell
     vram.com 1 30 7 Privet, Mir!
 ```
 ![example](https://github.com/andredze/asm_vram/raw/master/example.png)
 
-## Example of custom style
-Draw a frame with symbols: "abcd!f123" and text "HelloJopa"
+## Пример 2 (произвольный стиль)
+Рамка из символов: "abcd!f123" с текстом "HelloJopa"
 ```powershell
     vram.com 0 abcd!f123 20 5 HelloJopa
 ```

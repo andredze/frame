@@ -66,7 +66,7 @@ FrameStyle ends
 
 Start:
     call Main
-    call Exit
+    jmp  Exit
 
 ;=================================================================================
 
@@ -95,14 +95,12 @@ Main endp
 ;--------------------------------------------------------------------------------
 ;                           C-DECL TYPE
 ; Short:   Draws animation of a frame growing and shredding
-; Exp:     -
 ; In:      push in stack in reverse order (first arg pushed last):
 ;          [4] --> FrameStyle struct    (AX)
 ;          [3] = starting frame width   (BX)
 ;          [2] = text length            (CX)
 ;          [1] = starting frame height  (DX)
 ;          [0] --> text                 (SI)
-; Out:     -
 ; Destroy: AX, SI, DI
 ; Note: have to add 10 to sp after usage
 ;--------------------------------------------------------------------------------
@@ -152,7 +150,6 @@ DrawAnimation endp
 ;          CX = text length
 ;          DX = starting frame height
 ;          SI --> text
-; Out:     -
 ; Destroy: BX, DX, BP, DI
 ;--------------------------------------------------------------------------------
 
@@ -163,9 +160,9 @@ AnimationLoop proc
         call ClearScreen
         pop di cx ax
 
-        push ax cx si bp
+        push ax bx cx si bp
         call DrawScreen
-        pop bp si cx ax
+        pop bp si cx bx ax
 
         push bx cx
         call WaitTime
@@ -184,14 +181,12 @@ AnimationLoop endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Draws frame, it's bg and text on the screen
-; Exp:     -
 ; In:      BX = frame width
 ;          DX = frame height
 ;          CX = text length
 ;          SI --> frame style
 ;          AX --> text
-; Out:     -
-; Destroy: AX, CX, SI, DI
+; Destroy: AX, BX, CX, SI, DI
 ;--------------------------------------------------------------------------------
 
 DrawScreen proc
@@ -209,7 +204,6 @@ DrawScreen proc
     pop si di cx ax
 
 ; get text color (prepare args for DrawText)
-    push di si dx bx ax
 
     push bx
     ; BX = frame style
@@ -220,8 +214,8 @@ DrawScreen proc
     mov ax, [bx + TextColor]
     pop bx
 
-    call DrawCenteredText
-    pop ax bx dx si di
+    ; tail call --> ret of inside function will return from our function
+    jmp DrawCenteredText
 
     ret
 
@@ -230,8 +224,6 @@ DrawScreen endp
 ;--------------------------------------------------------------------------------
 ; Short:   Clears the screen
 ; Exp:     DF = 0
-; In:      -
-; Out:     -
 ; Destroy: AX, CX, DI
 ;--------------------------------------------------------------------------------
 
@@ -250,9 +242,6 @@ ClearScreen endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Waits some time by making loops
-; Exp:     -
-; In:      -
-; Out:     -
 ; Destroy: BX CX
 ;--------------------------------------------------------------------------------
 
@@ -280,11 +269,8 @@ WaitTime endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Gets cmd line and it's length into registers
-; Exp:     -
-; In:      -
 ; Out:     CX = CmdTailLen
 ;          SI = &CmdTail
-; Destroy: -
 ;--------------------------------------------------------------------------------
 
 GetCmdLine proc
@@ -308,7 +294,6 @@ GetCmdLine endp
 ;--------------------------------------------------------------------------------
 ;                           PASCAL TYPE
 ; Short:   Parses cmd line into text, its length, frame style, frame size
-; Exp:     -
 ; In:      push in stack in order:
 ;          [0] = CmdTailLen (CX)
 ;          [1] --> CmdTail  (SI)
@@ -354,7 +339,6 @@ ParseCmdLine endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Parse cmd line to get frame width and frame height
-; Exp:     -
 ; In:      CX = cmd tail args end len
 ;          DS:[SI] --> cmd tail args
 ; Out:     BX = frame width
@@ -409,12 +393,10 @@ GetFrameSize endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   skips spaces
-; Exp:     -
 ; In:      SI --> &String
 ;          CX = StringLen
 ; Out:     CX = StringLen - SpacesCount
 ;          SI --> first non-space symbol
-; Destroy: -
 ;--------------------------------------------------------------------------------
 
 SkipSpaces proc
@@ -442,10 +424,8 @@ SkipSpaces endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   increments if number is odd
-; Exp:     -
 ; In:      AX = any number
 ; Out:     AX = even number
-; Destroy: -
 ;--------------------------------------------------------------------------------
 
 MakeEven proc
@@ -461,7 +441,6 @@ MakeEven endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Gets an integer value from string (until the ' ')
-; Exp:     -
 ; In:      CX = StringLen
 ;          SI --> String
 ; Out:     AX = integer value
@@ -517,11 +496,9 @@ GetInt endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Check if given ASCII code represents an integer
-; Exp:     -
 ; In:      DL = symbol
 ; Out:     BX = 0 if not a digit
 ;          BX = 1 if a digit
-; Destroy: -
 ;--------------------------------------------------------------------------------
 
 IsDigit proc
@@ -546,7 +523,6 @@ IsDigit endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Puts ptr to a frame style struct in AX (by index)
-; Exp:     -
 ; In:      AX = Frame Style index
 ; Out:     AX --> FrameStyle
 ; Destroy: BX, DX
@@ -671,7 +647,6 @@ GetFrameLeftUpperCornerPos endp
 ;          DX = frame height
 ;          BX = frame width
 ;          DI = position of left upper corner of a frame
-; Out:     -
 ; Destroy: AX, CX, SI, DI
 ;--------------------------------------------------------------------------------
 
@@ -773,7 +748,6 @@ DrawHorizontalLine endp
 ;          CX = text length
 ;          SI --> text
 ;          AH = text color
-; Out:     -
 ; Destroy: BX, CX, DI, SI
 ;--------------------------------------------------------------------------------
 
@@ -787,7 +761,8 @@ DrawCenteredText proc
     call SetWritingStartPos
     pop ax si
 
-    call LoadText
+    ; tail call --> ret of inside function will return from our function
+    jmp LoadText
 
     @@End:
 
@@ -797,7 +772,6 @@ DrawCenteredText endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   Sets DI to a pos to write text
-; Exp:
 ; In:      CX = text length
 ;          DI = lu frame corner pos
 ;          BX = frame width
@@ -856,7 +830,6 @@ SetWritingStartPos endp
 ;          SI = text start pos in data
 ;          CX = text length
 ;          AH = text color
-; Out:     -
 ; Destroy: CX, DI, SI
 ;--------------------------------------------------------------------------------
 
@@ -874,9 +847,6 @@ LoadText endp
 
 ;--------------------------------------------------------------------------------
 ; Short:   ends the program
-; Exp:     -
-; In:      -
-; Out:     -
 ; Destroy: AX
 ;--------------------------------------------------------------------------------
 
@@ -961,8 +931,8 @@ RegsFrameStyle FrameStyle <                     \
 ;------------------------------------
 ; [4] = penis c1h c2h
     FrameStyle <                            \
-        (              BLUE    * 100h),     \
-        (              BLUE_BG * 100h),     \
+        (                BLUE     * 100h),  \
+        (                BLUE_BG  * 100h),  \
         (0c1h  + (BLUE + BLUE_BG) * 100h),  \
         (0c2h  + (BLUE + BLUE_BG) * 100h),  \
         (0c1h  + (BLUE + BLUE_BG) * 100h),  \
