@@ -4,7 +4,7 @@
 
 Должна быть запущена на DOSBox-е
 
-# Скомпилировать программу
+## Компиляция программы
 ```powershell
     tasm /la vram.asm
     tlink /t vram.obj
